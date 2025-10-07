@@ -5,23 +5,25 @@ import { NextAuthOptions } from 'next-auth';
 // Supabase adapter is optional — guard creation so dev server doesn't crash when envs missing
 let adapter: any = undefined;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { createClient } = require('@supabase/supabase-js');
+  // Use server-side supabaseService (created with service role key) when available
+  // Importing the server client ensures we don't leak service keys to the client bundle
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { SupabaseAdapter } = require('@next-auth/supabase-adapter');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const supabaseService = require('../../../lib/supabaseServer').default;
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabaseUrl = process.env.SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
   if (supabaseUrl && supabaseKey) {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    adapter = SupabaseAdapter(supabase);
+    adapter = SupabaseAdapter(supabaseService);
+    console.info('NextAuth: SupabaseAdapter configured using service role key');
   } else {
-    console.warn('Supabase environment variables missing; running NextAuth without Supabase adapter');
+    console.warn('Supabase SERVICE role key or URL missing; NextAuth will run without DB adapter');
   }
 } catch (err) {
   // adapter module not installed or other error — continue without adapter
-  // console.warn('Supabase adapter not available', err);
+  console.warn('Supabase adapter not available or failed to initialize', err?.message || err);
 }
 
 export const authOptions: NextAuthOptions = {
