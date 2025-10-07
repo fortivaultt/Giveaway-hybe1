@@ -1,8 +1,12 @@
 import NextAuth from 'next-auth/next';
 import EmailProvider from 'next-auth/providers/email';
 import { NextAuthOptions } from 'next-auth';
+import { createClient } from '@supabase/supabase-js';
+import { SupabaseAdapter } from '@next-auth/supabase-adapter';
 
-const options: NextAuthOptions = {
+const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
+
+export const authOptions: NextAuthOptions = {
   providers: [
     EmailProvider({
       server: {
@@ -16,20 +20,23 @@ const options: NextAuthOptions = {
       from: process.env.SMTP_FROM || process.env.SMTP_USER
     })
   ],
+  adapter: SupabaseAdapter(supabase),
   pages: {
     signIn: '/login'
   },
+  session: {
+    strategy: 'database'
+  },
   callbacks: {
     async session({ session, user }) {
-      // attach giveaway metadata if available
-      if (user && 'id' in user) {
+      if (user) {
         (session as any).user.id = (user as any).id;
-        (session as any).user.giveawayId = (user as any).giveawayId || null;
+        (session as any).user.giveawayId = (user as any).giveaway_id || null;
       }
       return session;
     }
   }
 };
 
-const handler = NextAuth(options);
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
