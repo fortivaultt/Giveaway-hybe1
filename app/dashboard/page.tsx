@@ -5,6 +5,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import StatusTimeline from '../../components/StatusTimeline';
 import NotificationFeed from '../../components/NotificationFeed';
 import WinnerModal from '../../components/WinnerModal';
+import ProfileDrawer from '../../components/ProfileDrawer';
 
 export default async function DashboardPage(){
   const session = await getServerSession(authOptions as any);
@@ -31,6 +32,8 @@ export default async function DashboardPage(){
         </aside>
       </section>
       <WinnerModal open={isWinner} />
+      {/* Profile drawer is client-only and will be toggled via header */}
+      <ProfileDrawer open={false} onClose={() => {}} />
     </main>
   );
 }
