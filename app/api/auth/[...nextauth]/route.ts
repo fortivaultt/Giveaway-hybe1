@@ -56,5 +56,32 @@ export const authOptions: NextAuthOptions = {
   }
 };
 
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+// Create NextAuth handler lazily to avoid initialization-time crashes
+let _handler: any = null;
+function getHandler() {
+  if (!_handler) {
+    const NextAuth = require('next-auth/next').default;
+    _handler = NextAuth(authOptions);
+  }
+  return _handler;
+}
+
+export async function GET(req: Request) {
+  try {
+    const h = getHandler();
+    return await h(req);
+  } catch (err: any) {
+    console.error('NextAuth GET error:', err);
+    return new Response(JSON.stringify({ error: 'Auth server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const h = getHandler();
+    return await h(req);
+  } catch (err: any) {
+    console.error('NextAuth POST error:', err);
+    return new Response(JSON.stringify({ error: 'Auth server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+}
