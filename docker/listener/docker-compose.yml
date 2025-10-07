@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  supabase-listener:
+    build:
+      context: ../.. # run `docker-compose` from docker/listener or adjust path to repo root
+      dockerfile: docker/listener/Dockerfile
+    restart: unless-stopped
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+    # If you want to mount a local .env file, uncomment below
+    # env_file:
+    #   - ../../.env
+    # Logging
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
