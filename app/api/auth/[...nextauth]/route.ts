@@ -1,10 +1,28 @@
 import NextAuth from 'next-auth/next';
 import EmailProvider from 'next-auth/providers/email';
 import { NextAuthOptions } from 'next-auth';
-import { createClient } from '@supabase/supabase-js';
-import { SupabaseAdapter } from '@next-auth/supabase-adapter';
 
-const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
+// Supabase adapter is optional — guard creation so dev server doesn't crash when envs missing
+let adapter: any = undefined;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { createClient } = require('@supabase/supabase-js');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { SupabaseAdapter } = require('@next-auth/supabase-adapter');
+
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+  if (supabaseUrl && supabaseKey) {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    adapter = SupabaseAdapter(supabase);
+  } else {
+    console.warn('Supabase environment variables missing; running NextAuth without Supabase adapter');
+  }
+} catch (err) {
+  // adapter module not installed or other error — continue without adapter
+  // console.warn('Supabase adapter not available', err);
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -20,12 +38,12 @@ export const authOptions: NextAuthOptions = {
       from: process.env.SMTP_FROM || process.env.SMTP_USER
     })
   ],
-  adapter: SupabaseAdapter(supabase),
+  ...(adapter ? { adapter } : {}),
   pages: {
     signIn: '/login'
   },
   session: {
-    strategy: 'database'
+    strategy: adapter ? 'database' : 'jwt'
   },
   callbacks: {
     async session({ session, user }) {
